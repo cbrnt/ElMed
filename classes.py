@@ -17,8 +17,8 @@ class Credentials:
 
 class MountPoint:
     def __init__(self, mount_point: str, vol_size: int):
-        self.mount_point = ''
-        self.vol_size = 0
+        self.mount_point = mount_point
+        self.vol_size = vol_size
 
 
 class Workload:
@@ -55,11 +55,17 @@ class MigrationTarget:
 
 
 class Migration:
-    def __init__(self, selected_mounts: MountPoint, source: Workload):
-        pass
+    def __init__(self, selected_mounts: List[MountPoint], migration_source: Workload,
+                 migration_target: MigrationTarget, migration_state: str):
+        assert migration_state in ['not started', 'running', 'error', 'success'], f'Unknown status: {migration_state}'
+        self.selected_mounts = selected_mounts
+        self.migration_source = migration_source
+        self.migration_target = migration_target
+        self.migration_state = migration_state
 
     def run(self):
         sleep(100)
-
+        for mount in self.selected_mounts:
+            pass
 
 
