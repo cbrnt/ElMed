@@ -8,7 +8,6 @@ from classes import Migration
 import argparse
 
 
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", dest="path", required=True, help='point a JSON file with migration parameters')
