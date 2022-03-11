@@ -1,8 +1,9 @@
 import logging
 from time import sleep
 
-from loguru import logger
+# from loguru import logger
 from typing import List
+import json
 
 
 class MigrationErrors(Exception):
@@ -100,3 +101,20 @@ class Migration:
         pass
 
 
+class FileSystem:
+    def __init__(self, file):
+        self.file = file
+
+    def read(self):
+        with open(self.file, 'r') as file:
+            data = json.load(file)
+        return data
+
+    def write(self):
+        pass
+
+    def update(self):
+        pass
+
+    def delete(self):
+        pass

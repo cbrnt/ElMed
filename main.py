@@ -3,20 +3,37 @@ from classes import MigrationTarget
 from classes import Credentials
 from classes import Workload
 from classes import MountPoint
+from classes import FileSystem
 from classes import Migration
-import os
+import argparse
 
 
-def main(name):
-    mounts = [MountPoint(MountPoint('h:\\', 120000000), MountPoint('d:\\', 240000000), MountPoint('c:\\', 100000000)), MountPoint()]
-    source = Source(os.environ['SOURCE_USER'], os.environ['SOURCE_PASS'], ip='SOURCE_IP')
-    credentials = Credentials(os.environ['MIG_USER'], os.environ['MIG_PASS'], os.environ['MIG_DOMAIN'])
-    workload = Workload(os.environ['WORKLOAD_IP'], credentials, mounts)
-    target = MigrationTarget(cloud_credentials=credentials, cloud_type=os.environ['CLOUD_TYPE'], target_vm=workload)
-    selected_mounts = [MountPoint('h:\\', 120000000), MountPoint('d:\\', 240000000)]
-    migration = Migration(selected_mounts, workload, target, 'not started')
-    migration.run()
-
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data", dest="path", required=True, help='point a JSON file with migration parameters')
+    args = parser.parse_args()
+    file = FileSystem(args.path)
+    data = file.read()
+    # gets data from JSON file
+    # mounts
+    mounts = []
+    for key, value in data['mount_points'].items():
+        mounts.append(MountPoint(key, value))
+    source = Source(username=data['source']['username'],
+                    password=data['source']['password'],
+                    ip=data['source']['source_ip'])
+    credentials = Credentials(data['credentials']['username'],
+                              data['credentials']['password'],
+                              data['credentials']['domain'])
+    workload = Workload(ip=data['workload"']['ip'],
+                        credentials=credentials, mounts=mounts)
+    target = MigrationTarget(cloud_credentials=credentials,
+                             cloud_type=data['migration']['cloud_type'],
+                             target_vm=workload)
+    migration = Migration(selected_mounts=data['selected_mounts'],
+                          migration_source=source,
+                          migration_target=target,
+                          migration_state=data['migration']['migration_state'])
 
 if __name__ == '__main__':
     main()
