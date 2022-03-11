@@ -6,6 +6,9 @@ from classes import MountPoint
 from classes import FileSystem
 from classes import Migration
 import argparse
+from loguru import logger
+
+logger.add("migration_{time}.log")
 
 
 def main():
@@ -15,7 +18,6 @@ def main():
     file = FileSystem(args.path)
     data = file.read()
     # gets data from JSON file
-    # mounts
     mounts = []
     for key, value in data['mount_points'].items():
         mounts.append(MountPoint(key, value))

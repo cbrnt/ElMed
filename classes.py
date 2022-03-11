@@ -1,18 +1,18 @@
 import logging
 from time import sleep
 
-# from loguru import logger
+from loguru import logger
 from typing import List
 import json
 
 
 class MigrationErrors(Exception):
     def __init__(self, *args):
-        logging.error(f'Error occurred during migration: {args}')
+        logger.error(f'Error occurred during migration: {args}')
 
 
 class Credentials:
-    """Target cloud authorization credentials"""
+    """Target cloud authorization credentials."""
     def __init__(self, username: str, password: str, domain: str):
         self.username = username
         self.password = password
@@ -31,7 +31,7 @@ class MountPoint:
 
 
 class Workload:
-    """Potential machine for migration"""
+    """Potential machine for migration."""
     def __init__(self, ip: str, credentials: Credentials, storage: List[MountPoint]):
         self.ip = ip
         self.credentials = credentials
@@ -39,7 +39,7 @@ class Workload:
 
 
 class Source:
-    """Source machine parameters"""
+    """Source machine parameters."""
 
     def __init__(self, username: str, password: str, ip: str):
         # todo add logging to file via loguru
@@ -77,25 +77,27 @@ class Migration:
         self.migration_state = migration_state
 
     def run(self):
-        """Process migration
+        """Process migration.
 
         - copy data only with selected mounts points;
         - not running migration without 'C:\' mount point
+
         """
 
         self.migration_target.target_vm = self.migration_source
         self.migration_target.target_vm.storage = self.selected_mounts
 
         if 'C:\\' in self.migration_target.target_vm.storage:
-            print('Starting migration')
+            logger.info('Starting migration')
             try:
                 self.migration_state = 'running'
                 sleep(100)
                 self.migration_state = 'success'
+                logger.info('Migration finished successfully')
             except Exception as e:
                 raise MigrationErrors(e)
         else:
-            print("Mount points list isn't contain system disk. Can't start migration")
+            logger.warning("Mount points list isn't contain system disk. Can't start migration")
 
     def save_to_file(self):
         pass
