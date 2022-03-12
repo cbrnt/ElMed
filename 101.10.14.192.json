@@ -1,0 +1,45 @@
+{
+  "source": {
+    "source_ip": "101.10.14.192",
+    "username": "Chell",
+    "password": "ai_must_die"
+  },
+  "source_machine": {
+    "username": "GlaDOS",
+    "password": "tasty_pie",
+    "domain": "lab1.aperture.net"
+  },
+  "target_machine": {
+    "username": "migration_user",
+    "password": "jkgjfdk00808",
+    "domain": "node9.sky.net"
+  },
+  "cloud_credentials": {
+    "username": "cloud11",
+    "password": "lkljksad9001_",
+    "domain": "sky.net"
+  },
+  "mount_points": {
+    "c:\\": 12000000,
+    "d:\\": 50000000,
+    "h:\\": 30000000
+  },
+  "workload": {
+    "source_machine": {
+      "ip": "9.9.9.9"
+    },
+    "target_machine": {
+      "ip": "110.190.11.13"
+    }
+  },
+  "migration_target": {
+    "cloud_type": "azure"
+  },
+  "migration": {
+    "selected_mounts": {
+      "d:\\": 30000000,
+      "c:\\": 12000000
+    },
+    "migration_state": "success"
+  }
+}
