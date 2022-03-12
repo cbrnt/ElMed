@@ -1,18 +1,31 @@
-import logging
+import os
 from time import sleep
-
 from loguru import logger
+
 from typing import List
 import json
 
+logger.add("migration.log")
 
-class MigrationErrors(Exception):
+
+class MigrationError(Exception):
     def __init__(self, *args):
         logger.error(f'Error occurred during migration: {args}')
 
 
+class MountPointError(Exception):
+    def __init__(self, *args):
+        logger.error("Mount points list doesn't contain system disk. Can't start migration")
+
+
+class FileError(Exception):
+    def __init__(self, *args):
+        logger.error(f'Error occurred during working with JSON: {args}')
+
+
 class Credentials:
     """Target cloud authorization credentials."""
+
     def __init__(self, username: str, password: str, domain: str):
         self.username = username
         self.password = password
@@ -25,13 +38,15 @@ class MountPoint:
     Size of disk vol_size must be set in bytes
 
     """
+
     def __init__(self, mount_point: str, vol_size: int):
-        self.mount_point = mount_point
+        self.mount_path = mount_point
         self.vol_size = vol_size
 
 
 class Workload:
     """Potential machine for migration."""
+
     def __init__(self, ip: str, credentials: Credentials, storage: List[MountPoint]):
         self.ip = ip
         self.credentials = credentials
@@ -39,13 +54,9 @@ class Workload:
 
 
 class Source:
-    """Source machine parameters."""
-
     def __init__(self, username: str, password: str, ip: str):
-        # todo add logging to file via loguru
-        assert username is not None, 'Username should not be empty'
-        assert password is not None, 'Password should not be empty'
-        # todo add ip restriction
+        assert username is not None, logger.error('Username should not be empty')
+        assert password is not None, logger.error('Password should not be empty')
         assert ip is not None, 'IP should not be empty'
         self.username = username
         self.password = password
@@ -59,9 +70,10 @@ class MigrationTarget:
     target_vm -- attributes of target VM in cloud
 
     """
+
     def __init__(self, cloud_type: str,
                  cloud_credentials: Credentials, target_vm: Workload):
-        assert cloud_type in ['aws', 'azure', 'vsphere', 'vcloud'], f'{cloud_type} is not supported'
+        assert cloud_type in ['aws', 'azure', 'vsphere', 'vcloud'], f'{cloud_type} cloud type is not supported'
         self.cloud_type = cloud_type
         self.cloud_credentials = cloud_credentials
         self.target_vm = target_vm
@@ -87,36 +99,117 @@ class Migration:
         self.migration_target.target_vm = self.migration_source
         self.migration_target.target_vm.storage = self.selected_mounts
 
-        if 'C:\\' in self.migration_target.target_vm.storage:
-            logger.info('Starting migration')
-            try:
-                self.migration_state = 'running'
-                sleep(100)
-                self.migration_state = 'success'
-                logger.info('Migration finished successfully')
-            except Exception as e:
-                raise MigrationErrors(e)
-        else:
-            logger.warning("Mount points list isn't contain system disk. Can't start migration")
+        # check system mount
+        found = False
+        for mount in self.selected_mounts:
+            print(mount.mount_path)
+            print(str.lower(mount.mount_path))
+            if str.lower(mount.mount_path) == 'c:\\':
+                found = True
+                break
+        if not found:
+            raise MountPointError
 
-    def save_to_file(self):
-        pass
+        logger.info('Starting migration')
+        try:
+            self.migration_state = 'running'
+            sleep(1)
+            self.migration_state = 'success'
+            logger.info('Migration finished successfully')
+        except Exception as e:
+            raise MigrationError(e)
 
 
-class FileSystem:
+class StateFile:
+    """Keeping migration data as file.
+
+    Using JSON format is little bit more complicated to implement but gives you an opportunity to open it in text editor and make fast changes.
+    Create file name contains source IP address.
+    Can't be duplicate file with the same source IP. In this case file will be rewritten.
+
+    """
+
     def __init__(self, file):
         self.file = file
 
+    @staticmethod
+    def pack_json(
+            source: Source,
+            mounts: List[MountPoint],
+            credentials_source_machine: Credentials,
+            credentials_target_machine: Credentials,
+            cloud_credentials: Credentials,
+            workload_source_machine: Workload,
+            workload_target_machine: Workload,
+            target: MigrationTarget,
+            migration: Migration
+    ) -> dict:
+        mounts_dict = {}
+        for mount in mounts:
+            mounts_dict[mount.mount_path] = mount.vol_size
+        selected_mount_dict = {}
+        for sel_mount in migration.selected_mounts:
+            selected_mount_dict[sel_mount.mount_path] = sel_mount.vol_size
+        json_dict = {
+            "source": {
+                "source_ip": source.ip,
+                "username": source.username,
+                "password": source.password
+            },
+            "source_machine": {
+                "username": credentials_source_machine.username,
+                "password": credentials_source_machine.password,
+                "domain": credentials_source_machine.domain
+            },
+            "target_machine": {
+                "username": credentials_target_machine.username,
+                "password": credentials_target_machine.password,
+                "domain": credentials_target_machine.domain
+            },
+            "cloud_credentials": {
+                "username": cloud_credentials.username,
+                "password": cloud_credentials.password,
+                "domain": cloud_credentials.domain
+            },
+            "mount_points": mounts_dict,
+            "workload": {
+                "source_machine": {
+                    "ip": workload_source_machine.ip
+                },
+                "target_machine": {
+                    "ip": workload_target_machine.ip
+                }
+            },
+            "migration_target": {
+                "cloud_type": target.cloud_type,
+            },
+            "migration": {
+                "selected_mounts": selected_mount_dict,
+                "migration_state": migration.migration_state
+            }
+        }
+        return json_dict
+
     def read(self):
-        with open(self.file, 'r') as file:
+        with open(self.file) as file:
             data = json.load(file)
         return data
 
-    def write(self):
-        pass
+    def write(self, data):
+        with open(self.file, 'w') as file:
+            json.dump(data, file, indent=2)
 
-    def update(self):
-        pass
+    @staticmethod
+    def new(data):
+        ip_name_list = str.split(data['source']['source_ip'], sep='.')
+        file_name = '.'.join(ip_name_list) + '.json'
+        with open(file_name, 'w') as file:
+            json.dump(data, file, indent=2)
+        return file_name
 
-    def delete(self):
-        pass
+
+    @staticmethod
+    def remove(source_ip: str):
+        ip_name_list = str.split(source_ip, sep='.')
+        file_name = '.'.join(ip_name_list) + '.json'
+        os.remove(file_name)
