@@ -1,0 +1,59 @@
+curl -i http://127.0.0.1:5000/migrations \
+-X POST \
+-H 'Content-Type: application/json' \
+-d '{
+  "source": {
+    "source_ip": "201.10.114.12",
+    "username": "Chello",
+    "password": "ai"
+  },
+  "source_machine": {
+    "username": "NOT_GlaDOS",
+    "password": "tasty_pie",
+    "domain": "lab14.aperture.net"
+  },
+  "target_machine": {
+    "username": "migration_user",
+    "password": "jkgjfdk00808",
+    "domain": "node91.sky.net"
+  },
+  "cloud_credentials": {
+    "username": "cloud11",
+    "password": "lkljksad9001_",
+    "domain": "sky.net"
+  },
+  "mount_points": {
+    "c:\\": 12000000,
+    "d:\\": 50000000,
+    "h:\\": 30000000
+  },
+  "workload": {
+    "source_machine": {
+      "ip": "9.9.9.9"
+    },
+    "target_machine": {
+      "ip": "110.190.11.13"
+    }
+  },
+  "migration_target": {
+    "cloud_type": "azure"
+  },
+  "migration": {
+    "selected_mounts": {
+      "d:\\": 30000000,
+      "c:\\": 12000000,
+      "z:\\": 22200000
+    },
+    "migration_state": "not started"
+  }
+}'
+
+curl -i http://127.0.0.1:5000/migrations \
+-X DELETE \
+-H 'Content-Type: application/json' \
+-d '{
+  "remove": [
+    "10.10.0.1",
+    "10.11.11.11"
+  ]
+}'

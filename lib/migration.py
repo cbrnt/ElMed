@@ -1,7 +1,7 @@
 import os
 from time import sleep
 from loguru import logger
-from typing import List
+from typing import List, Union
 import json
 from pathlib import Path
 
@@ -208,6 +208,10 @@ class StateFile:
             return json.dump(data, file, indent=2)
 
     @staticmethod
+    def list_files():
+        return os.listdir('./migrations')
+
+    @staticmethod
     def new(data):
         """Creates and save new migration object to file."""
         ip_name_list = str.split(data['source']['source_ip'], sep='.')
@@ -217,15 +221,27 @@ class StateFile:
         return file_name
 
     @staticmethod
-    def remove(source_ip: str):
+    def remove(source_ip: Union[str, list]):
         """Remove file with object."""
-        ip_name_list = str.split(source_ip, sep='.')
-        file_name = 'migrations/' + ''.join(ip_name_list) + '.json'
-        path = Path(file_name)
-        if path.exists():
-            os.remove(file_name)
+        if isinstance(source_ip, list):
+            file_name = []
+            for line in source_ip:
+                file_name.append('migrations/' + line + '.json')
+            for file in file_name:
+                path = Path(file)
+                if path.exists():
+                    os.remove(file)
+                else:
+                    return f"File {file} doesn't exist"
+            return "Migrations deleted"
         else:
-            return f'migration with IP {source_ip} is not exist'
+            file_name = 'migrations/' + source_ip + '.json'
+            path = Path(file_name)
+            if path.exists():
+                os.remove(file_name)
+                return "Migration deleted"
+            else:
+                return f"File {file_name} doesn't exist"
 
 
 def build_migration(data: dict) -> Migration:
