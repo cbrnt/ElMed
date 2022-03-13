@@ -5,9 +5,6 @@ from typing import List
 import json
 from pathlib import Path
 
-
-# PWD = os.getcwd()
-# logger.add("ElMed/logs/migration.log")
 STORAGE = './migrations/'
 
 
@@ -57,6 +54,7 @@ class Workload:
 
 
 class Source:
+    """Source object for migration."""
     def __init__(self, username: str, password: str, ip: str):
         assert username is not None, logger.error('Username should not be empty')
         assert password is not None, logger.error('Password should not be empty')
@@ -83,6 +81,11 @@ class MigrationTarget:
 
 
 class Migration:
+    """Main migration object.
+
+     Contains all essential data for starting migration.
+
+     """
     def __init__(self, selected_mounts: List[MountPoint], migration_source: Workload,
                  migration_target: MigrationTarget, migration_state: str = 'not started'):
         assert migration_state in ['not started', 'running', 'error', 'success'], f'Unknown status: {migration_state}'
@@ -92,7 +95,7 @@ class Migration:
         self.migration_state = migration_state
 
     def run(self):
-        """Process migration.
+        """Start migration process.
 
         - copy data only with selected mounts points;
         - not running migration without 'C:\' mount point
@@ -193,26 +196,29 @@ class StateFile:
         }
         return json_dict
 
-    def read(self):
+    def read(self) -> dict:
+        """Gets data from migration file."""
         with open(self.file) as file:
             data = json.load(file)
         return data
 
-    def write(self, data):
+    def write(self, data: dict):
+        """Write data to JSON file."""
         with open(self.file, 'w') as file:
             return json.dump(data, file, indent=2)
 
     @staticmethod
     def new(data):
+        """Creates and save new migration object to file."""
         ip_name_list = str.split(data['source']['source_ip'], sep='.')
         file_name = STORAGE + '.'.join(ip_name_list) + '.json'
         with open(file_name, 'w') as file:
             json.dump(data, file, indent=2)
         return file_name
 
-
     @staticmethod
     def remove(source_ip: str):
+        """Remove file with object."""
         ip_name_list = str.split(source_ip, sep='.')
         file_name = 'migrations/' + ''.join(ip_name_list) + '.json'
         path = Path(file_name)
@@ -220,3 +226,39 @@ class StateFile:
             os.remove(file_name)
         else:
             return f'migration with IP {source_ip} is not exist'
+
+
+def build_migration(data: dict) -> Migration:
+    """Create Migration object."""
+    mounts = []
+    for mount_path, vol_size in data['mount_points'].items():
+        mounts.append(MountPoint(mount_path, vol_size))
+    selected_mounts = []
+    for mount_path, vol_size in data['migration']['selected_mounts'].items():
+        selected_mounts.append(MountPoint(mount_path, vol_size))
+    source = Source(data['source']['username'],
+                    data['source']['password'],
+                    data['source']['source_ip'])
+    credentials_source_machine = Credentials(data['source_machine']['username'],
+                                             data['source_machine']['password'],
+                                             data['source_machine']['domain'])
+    credentials_target_machine = Credentials(data['target_machine']['username'],
+                                             data['target_machine']['password'],
+                                             data['target_machine']['domain'])
+    cloud_credentials = Credentials(data['cloud_credentials']['username'],
+                                    data['cloud_credentials']['password'],
+                                    data['cloud_credentials']['domain'])
+    workload_source_machine = Workload(data['workload']['source_machine']['ip'],
+                                       credentials_source_machine,
+                                       mounts)
+    workload_target_machine = Workload(data['workload']['target_machine']['ip'],
+                                       credentials_target_machine,
+                                       mounts)
+    target = MigrationTarget(data['migration_target']['cloud_type'],
+                             cloud_credentials,
+                             workload_target_machine)
+    migration = Migration(selected_mounts,
+                          workload_source_machine,
+                          target,
+                          data['migration']['migration_state'])
+    return migration

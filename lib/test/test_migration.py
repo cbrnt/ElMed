@@ -1,15 +1,21 @@
 import os
 from pathlib import Path
 import unittest
-from lib.migration import StateFile, Migration
+from lib.migration import StateFile
+from lib.migration import build_migration
 
 
 class TestMigration(unittest.TestCase):
     def setUp(self) -> None:
-        self.migration = Migration()
+        self.file = './lib/test/' + "1.1.1.1.json"
 
     def test_run(self):
-        self.assertTrue(self.migration_state == 'success')
+        """Creates object Migration and checks run result."""
+        state = StateFile(self.file)
+        data = state.read()
+        migration = build_migration(data)
+        migration.run()
+        self.assertTrue(migration.migration_state == 'success')
 
 
 class TestStateFile(unittest.TestCase):
