@@ -1,11 +1,14 @@
 import os
 from time import sleep
 from loguru import logger
-
 from typing import List
 import json
+from pathlib import Path
 
-logger.add("migration.log")
+
+# PWD = os.getcwd()
+# logger.add("ElMed/logs/migration.log")
+STORAGE = './migrations/'
 
 
 class MigrationError(Exception):
@@ -81,7 +84,7 @@ class MigrationTarget:
 
 class Migration:
     def __init__(self, selected_mounts: List[MountPoint], migration_source: Workload,
-                 migration_target: MigrationTarget, migration_state: str):
+                 migration_target: MigrationTarget, migration_state: str = 'not started'):
         assert migration_state in ['not started', 'running', 'error', 'success'], f'Unknown status: {migration_state}'
         self.selected_mounts = selected_mounts
         self.migration_source = migration_source
@@ -97,13 +100,12 @@ class Migration:
         """
 
         self.migration_target.target_vm = self.migration_source
+        # this logic was a little bit unclear but anyway it is here
         self.migration_target.target_vm.storage = self.selected_mounts
 
         # check system mount
         found = False
         for mount in self.selected_mounts:
-            print(mount.mount_path)
-            print(str.lower(mount.mount_path))
             if str.lower(mount.mount_path) == 'c:\\':
                 found = True
                 break
@@ -123,9 +125,10 @@ class Migration:
 class StateFile:
     """Keeping migration data as file.
 
-    Using JSON format is little bit more complicated to implement but gives you an opportunity to open it in text editor and make fast changes.
-    Create file name contains source IP address.
+    Using JSON format.
+    Create file with name contains source IP address.
     Can't be duplicate file with the same source IP. In this case file will be rewritten.
+    It helps to keep object unique.
 
     """
 
@@ -197,12 +200,12 @@ class StateFile:
 
     def write(self, data):
         with open(self.file, 'w') as file:
-            json.dump(data, file, indent=2)
+            return json.dump(data, file, indent=2)
 
     @staticmethod
     def new(data):
         ip_name_list = str.split(data['source']['source_ip'], sep='.')
-        file_name = '.'.join(ip_name_list) + '.json'
+        file_name = STORAGE + '.'.join(ip_name_list) + '.json'
         with open(file_name, 'w') as file:
             json.dump(data, file, indent=2)
         return file_name
@@ -211,5 +214,9 @@ class StateFile:
     @staticmethod
     def remove(source_ip: str):
         ip_name_list = str.split(source_ip, sep='.')
-        file_name = '.'.join(ip_name_list) + '.json'
-        os.remove(file_name)
+        file_name = 'migrations/' + ''.join(ip_name_list) + '.json'
+        path = Path(file_name)
+        if path.exists():
+            os.remove(file_name)
+        else:
+            return f'migration with IP {source_ip} is not exist'

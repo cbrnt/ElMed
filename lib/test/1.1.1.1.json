@@ -1,0 +1,45 @@
+{
+  "source": {
+    "source_ip": "1.1.1.1",
+    "username": "test_source_user",
+    "password": "test_source_pass"
+  },
+  "source_machine": {
+    "username": "test_source_machine_user",
+    "password": "test_source_machine_password",
+    "domain": "test-lab.aperture.net"
+  },
+  "target_machine": {
+    "username": "test_target_machine_user",
+    "password": "test_target_machine_password",
+    "domain": "test-node.sky.net"
+  },
+  "cloud_credentials": {
+    "username": "test_cloud_user",
+    "password": "test_cloud_password",
+    "domain": "test.sky.net"
+  },
+  "mount_points": {
+    "x:\\": 22222222,
+    "y:\\": 33333333,
+    "c:\\": 12222222
+  },
+  "workload": {
+    "source_machine": {
+      "ip": "1.1.1.1"
+    },
+    "target_machine": {
+      "ip": "2.2.2.2"
+    }
+  },
+  "migration_target": {
+    "cloud_type": "azure"
+  },
+  "migration": {
+    "selected_mounts": {
+      "x:\\": 22222222,
+      "c:\\": 11111111
+    },
+    "migration_state": "success"
+  }
+}

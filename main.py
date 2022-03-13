@@ -1,13 +1,11 @@
 from loguru import logger
-from classes import Source
-from classes import MigrationTarget
-from classes import Credentials
-from classes import Workload
-from classes import MountPoint
-from classes import StateFile
-from classes import Migration
-from classes import FileError
-import json
+from lib.migration import StateFile
+from lib.migration import MountPoint
+from lib.migration import Source
+from lib.migration import Credentials
+from lib.migration import MigrationTarget
+from lib.migration import Migration
+from lib.migration import Workload
 import argparse
 
 
@@ -69,7 +67,7 @@ def main():
         target=target,
         migration=migration
     )
-    state_file.write(json_to_file)
+    result = state_file.write(json_to_file)
 
     # create migration with new source IP and target IP
     source.ip = "101.10.14.192"
@@ -87,7 +85,7 @@ def main():
     )
     new_object = StateFile.new(new_migration_json)
     # Remove old migration object
-    StateFile.remove("101.10.14.92")
+    # StateFile.remove("101.10.14.92")
 
 
 if __name__ == '__main__':
